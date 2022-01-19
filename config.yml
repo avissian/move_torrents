@@ -1,0 +1,7 @@
+client:
+ host: http://localhost:8080
+ login: admin
+ passw: adminadmin
+do:
+ new_path: /mnt/data/downloads/ # id раздачи добавится автоматически из коммента
+ regexp: ^https?://rutracker\.org/forum/viewtopic\.php\?t=(\d+)$
