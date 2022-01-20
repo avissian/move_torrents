@@ -1,7 +1,9 @@
 client:
- host: http://localhost:8080
- login: admin
- passw: adminadmin
+ client: transmission # допустимо qBittorrent или transmission
+ host: 192.168.1.20
+ port: 9091
+ user: transmission
+ password: transmisson
 do:
- new_path: /mnt/data/downloads/ # id раздачи добавится автоматически из коммента
+ new_path: /data/rutracker/ # id раздачи добавится автоматически из коммента
  regexp: ^https?://rutracker\.org/forum/viewtopic\.php\?t=(\d+)$

@@ -1,32 +1,26 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from yaml import full_load
-import qbittorrentapi
+import lib.client as c
 import re
 
 config = full_load(open('config.yml', 'r'))
-client = None
 
 
 def main():
-    global client
-    skipped = 0
-    client_cfg = config.get('client')
-    client = qbittorrentapi.Client(
-        host=client_cfg.get('host', 'http://localhost:8080'),
-        username=client_cfg.get('login', 'admin'),
-        password=client_cfg.get('passw', 'adminadmin'))
+    client = c.Client(**config.get('client'))
 
-    for torrent in client.torrents.info.all():
-        comment = client.torrents_properties(torrent_hash=torrent['hash'])['comment']
-        gr = re.match(config['do']['regexp'], comment)
+    skipped = 0
+
+    for torrent_comments in client.torrent_comments():
+        gr = re.match(config['do']['regexp'], torrent_comments.comment)
         if gr:
             location = config['do']['new_path'] + '/' + gr.groups()[0]
-            print(f'move {torrent["name"]} to {location}')
-            client.torrents_set_location(
-                location=location,
-                torrent_hashes=torrent['hash']
-            )
+            print(f'move "{torrent_comments.name}" to {location}')
+            client.move(torrent_hash=torrent_comments.hash, location=location)
         else:
-            print(f'skip {torrent["name"]}')
+            print(f'skip "{torrent_comments.name}" comment: {torrent_comments.comment}')
             skipped += 1
 
     if skipped > 0:
