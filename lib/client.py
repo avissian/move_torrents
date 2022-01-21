@@ -1,44 +1,44 @@
 # -*- coding: utf-8 -*-
+import logging
 
-import qbittorrentapi
-import transmission_rpc
+from qbittorrentapi import Client as Qbt
+from transmission_rpc import Client as Transmission
 
 from typing_extensions import Literal
-from attrdict import AttrDict
+from collections import namedtuple
 
 
 class Client:
     type = None
+
     client = None
 
     _qbt = 'qBittorrent'
     _transmission = 'transmission'
 
-    def __init__(
-            self,
-            user: str,
-            password: str,
-            client: Literal[None, 'qBittorrent', 'transmission'] = _qbt,
-            host: str = 'http://localhost',
-            port: int = 8080,
-            **kwargs
-    ):
+    t_comment = namedtuple('comments', ['hash', 'comment', 'name'])
+
+    def __init__(self,
+                 user: str,
+                 password: str,
+                 client: Literal[None, 'qBittorrent', 'transmission'] = _qbt,
+                 host: str = 'http://localhost',
+                 port: int = 8080,
+                 **kwargs):
         self.type = client or self._qbt
 
         if self.type == self._qbt:
-            self.client = qbittorrentapi.Client(
-                host=host,
-                username=user,
-                password=password,
-                port=port)
-            print(f'{self.type}: {self.client.server_version()}')
+            self.client = Qbt(host=host,
+                              username=user,
+                              password=password,
+                              port=port)
+            logging.debug(f'{self.type}: {self.client.app_version()}')
         elif self.type == self._transmission:
-            self.client = transmission_rpc.Client(
-                username=user,
-                password=password,
-                port=port,
-                host=host, )
-            print(f'{self.type}: {self.client.server_version}')
+            self.client = Transmission(username=user,
+                                       password=password,
+                                       port=port,
+                                       host=host, )
+            logging.debug(f'{self.type}: {self.client.server_version}')
         else:
             raise 'client.type должен быть qBittorrent или transmission'
 
@@ -46,16 +46,13 @@ class Client:
         res = []
         if self.type == self._qbt:
             for t in self.client.torrents_info():
-                d = AttrDict({'hash': t['hash'],
-                              'comment': self.client.torrents_properties(torrent_hash=t['hash']).get('comment'),
-                              'name': t['name']})
+                d = self.t_comment(hash=t['hash'],
+                                   comment=self.client.torrents_properties(torrent_hash=t['hash']).get('comment'),
+                                   name=t['name'])
                 res.append(d)
         elif self.type == self._transmission:
             for t in self.client.get_torrents():
-                comment = t.comment
-                d = AttrDict({'hash': t.hashString,
-                              'comment': comment,
-                              'name': t.name})
+                d = self.t_comment(hash=t.hashString, comment=t.comment, name=t.name)
                 res.append(d)
 
         return res
